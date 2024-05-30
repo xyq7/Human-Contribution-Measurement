@@ -92,8 +92,10 @@ python data_code/process_paper.py
 
 Finally, generate the summary and subject of text content.
 ```bash
-# TODO: add all code for different dataset
-python data_code/generate_summary.py
+python data_code/generate_summary_news.py
+python data_code/generate_summary_patent.py
+python data_code/generate_summary_poem.py
+python data_code/generate_summary_paper.py
 ```
 
 ## Demo
