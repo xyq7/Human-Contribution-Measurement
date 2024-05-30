@@ -6,7 +6,7 @@ import numpy as np
 csv_file_path = './raw_data_new/PoetryFoundationData.csv'
 
 
-json_file_path = './data_new/poem_new.json'
+json_file_path = './data_new/poem.json'
 def clean_text(text):
     text = re.sub(r'\r\r\n', ' ', text)
     text = re.sub(r'\s+', ' ', text)

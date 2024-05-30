@@ -54,10 +54,10 @@ def data_generate(data = None, model_name = None):
     return data
 
 if __name__ == "__main__":
-    with open("./data_new/poem_new.json", "r") as json_file:
+    with open("./data_new/news.json", "r") as json_file:
         data = json.load(json_file)
     for model_name in ["gpt-3.5-turbo-1106"]:
-        data = data_generate_summary(data=data, model_name = model_name)
-    with open("./data_new/poem_new_sum.json", 'w') as f:
+        data = data_generate(data=data, model_name = model_name)
+    with open("./data_new/news.json", 'w') as f:
         json.dump(data, f, indent=4) 
 
