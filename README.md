@@ -62,7 +62,7 @@ pip uninstall -y -q fschat
 pip install --upgrade git+https://github.com/lm-sys/FastChat
 ```
 
-For experiments with Mixtral-8x7B-Instruct-v0.1, fastchat is need to be reinstalled:
+For experiments with Mixtral-8x7B-Instruct-v0.1, vllm is need to be reinstalled:
 ```bash
 pip install vllm==0.2.7
 ```
