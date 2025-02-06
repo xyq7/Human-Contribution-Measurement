@@ -137,7 +137,7 @@ Parameters:
 
 Measure human contribution.
 ```bash
-bash script/evaluate_lens.sh {data} {eval_model} {model} {time}
+bash script/eval_lens.sh {data} {eval_model} {model} {time}
 ```
 Parameters:
 - data: The dataset on which the evaluation is performed. The options include: `["news", "paper", "patent", "poem"]`
@@ -165,3 +165,26 @@ Parameters:
 - eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b"]`
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
+
+### Impact of temperation
+
+Generate responses with varying lengths.
+```bash
+bash script/temperature.sh {data} {model} {time} {temperature}
+```
+Parameters:
+- model: The model used for generating responses. The options include: `["llama3_8b"]`
+- data: The dataset used for generating responses. The options include: `["news", "paper", "patent", "poem"]`
+- time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
+- temperature: The temperature required for generation
+
+Measure human contribution.
+```bash
+bash script/eval_temperature.sh {data} {eval_model} {model} {time} {temperature}
+```
+Parameters:
+- data: The dataset on which the evaluation is performed. The options include: `["news", "paper", "patent", "poem"]`
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b"]`
+- model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
+- time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
+- temperature: The temperature used for generation
