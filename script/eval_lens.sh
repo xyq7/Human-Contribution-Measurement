@@ -10,8 +10,9 @@ if [ ! -d "./result_lens2" ]; then
 fi
 
 
-python src/evaluate.py --dataset_name ${data} --llm_config_file ./src/config/${eval_model}.yaml \
+python src/evaluate_vary_lens.py --dataset_name ${data} --llm_config_file ./src/config/${eval_model}.yaml \
 --dataset_file ./data_new/${data}.json \
 --output_result_dir ./result_lens2/ \
 --response_file ./output_lens/${model}_${data}_${time}.jsonl \
+--num_words_list 100 200 300 400 500 600 800 1000 \
 --output_name ${eval_model}_${model}_${data}_${time}

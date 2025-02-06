@@ -87,6 +87,12 @@ class vLLMModel(BaseModel):
             Tuple[str],
         ],
     ) -> Any:
+        '''Given an example from dataset, process the example to obtain prompt/message.
+        
+        Args:
+        - prompt_construct_fn: the function to process example. Input example. Output user prompt if not require_system_prompt else system prompt and user prompt.
+        '''
+        
         conv_template = self.get_conv_template()
         if self.require_system_prompt:
             system_prompt, user_prompt = prompt_construct_fn(example)

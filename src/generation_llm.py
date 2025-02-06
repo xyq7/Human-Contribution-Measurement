@@ -22,6 +22,16 @@ from config import USER_PROMPT_DICT, MAX_RETRY, RPREFIX_DICT
 
 
 def construct_prompt(example, mode, dataset_name):
+    """
+    Constructs the prompt for LLM by combining system prompt and user prompt
+    Args:
+        example: The input example containing text data
+        mode: The generation mode (summary/polish/gen/subject)
+        dataset_name: Name of the dataset being processed
+    Returns:
+        system_prompt and formatted user prompt
+    """
+    
     system_prompt = "You are a helpful assistant."
     user_prompt_dict = USER_PROMPT_DICT[dataset_name]
     user_prompt_template, key = user_prompt_dict[mode]
@@ -30,6 +40,16 @@ def construct_prompt(example, mode, dataset_name):
 
 
 def process_dataset(file_name, num_examples):
+    """
+    Processes the input dataset file and creates Dataset objects
+    Args:
+        file_name: Path to the input JSON file
+        num_examples: Number of examples to process (None for all)
+    Returns:
+        dataset: Main dataset containing all examples
+        subject_dataset: Dataset containing unique subjects (if applicable)
+    """
+    
     with open(file_name, "r") as file:
         data = json.load(file)
 
@@ -58,6 +78,14 @@ def process_dataset(file_name, num_examples):
 
 
 def check_success(response, rprefix):
+    """
+    Checks if the LLM response contains the expected prefix
+    Args:
+        response: The LLM generated response
+        rprefix: Expected prefix to check for
+    Returns:
+        Boolean indicating if the response contains the prefix
+    """
     return response.rfind(rprefix) != -1
 
 
@@ -134,11 +162,18 @@ def parse_args():
     parser.add_argument(
         "--batch_size", type=int, default=None, help="The batch size for inference."
     )
+    parser.add_argument(
+        "--temperature", type=float, default=0.7, help="The temperature for generation"
+    )
     args = parser.parse_args()
     return args
 
 
 class DefaultDataCollator:
+    """
+    Custom data collator class for batching examples
+    Converts list of examples into a dictionary of batched features
+    """
     def __call__(self, batch_examples: List) -> Dict:
         batch_rslt = defaultdict(list)
 
@@ -157,19 +192,22 @@ if __name__ == "__main__":
 
     dataset, subject_dataset = process_dataset(args.input_file, args.num_examples)
 
+    # Initialize containers for datasets and load LLM configuration
     datasets = {}
     user_prompt_dict = USER_PROMPT_DICT[args.dataset_name]
     rprefix = RPREFIX_DICT[args.dataset_name]
 
+    # Initialize the LLM model with specified configuration
     llm = AutoLLM.from_name(args.llm_config_file)(
         config=args.llm_config_file,
         accelerator=accelerator,
         tensor_parallel_size=args.tensor_parallel_size,
         download_dir=args.download_dir,
-        temperature=0.7,
+        temperature=args.temperature,
         max_new_tokens=2048,
     )
 
+    # Process datasets for each specified mode
     with accelerator.main_process_first():
         for key in args.modes:
             if key not in user_prompt_dict:
@@ -200,6 +238,7 @@ if __name__ == "__main__":
 
     processed_dataset = concatenate_datasets(list(datasets.values()))
 
+    # Handle output file operations and resume functionality
     if args.output_file:
         output_file = Path(args.output_file)
         out = []
@@ -251,6 +290,7 @@ if __name__ == "__main__":
         processed_dataset, batch_size=args.batch_size, collate_fn=DefaultDataCollator()
     )
 
+    # Main generation loop
     with torch.no_grad():
         for data in tqdm(dataloader):
             retry_time = 0

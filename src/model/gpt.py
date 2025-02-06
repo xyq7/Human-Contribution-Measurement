@@ -55,6 +55,7 @@ class GPTModel(BaseModel):
         frequency_penalty=0,
         presence_penalty=0,
     ):
+        '''GPT chat completion implementation'''
         success = False
         while not success:
             try:
@@ -108,6 +109,7 @@ class GPTModel(BaseModel):
         presence_penalty=0,
         stop=["<|im_end|>"],
     ):
+        '''GPT completion implementation'''
         success = False
         while not success:
             try:
@@ -150,6 +152,7 @@ class GPTModel(BaseModel):
         return rslts
 
     def generate(self, data: Any, **kwargs):
+        '''GPT generation (use chat if config.chat is True)'''
         temperature = kwargs.pop("temperature", 0)
         if self.config["chat"]:
             rslts = []
@@ -174,6 +177,12 @@ class GPTModelWSystem(GPTModel):
             Tuple[str],
         ],
     ) -> Any:
+        '''Given an example from dataset, process the example to obtain prompt/message.
+        
+        Args:
+        - prompt_construct_fn: the function to process example. Input example, output system prompt and user prompt.
+        '''
+        
         system_prompt, user_prompt = prompt_construct_fn(example)
 
         if self.config["chat"]:
@@ -214,6 +223,12 @@ class GPTModelWOSystem(GPTModel):
             Tuple[str],
         ],
     ) -> Any:
+        '''Given an example from dataset, process the example to obtain prompt/message.
+        
+        Args:
+        - prompt_construct_fn: the function to process example. Input example, output user prompt.
+        '''
+        
         user_prompt = prompt_construct_fn(example)
         system_prompt = "You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible."
 

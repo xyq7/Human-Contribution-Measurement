@@ -1,3 +1,4 @@
+# prompt of different tasks for news dataset
 USER_PROMPT_NEWS = {
     "summary": (
         'Generate a news article with the following summary: {}. Limit your response to {} words. Start with "News:".',
@@ -49,6 +50,7 @@ USER_PROMPT_NEWS = {
     ),
 }
 
+# prompt of different tasks for paper dataset
 USER_PROMPT_PAPER = {
     "summary": (
         'Generate a paper abstract with the following summary: {}. Limit your response to {} words. Start with "Abstract:".',
@@ -100,6 +102,7 @@ USER_PROMPT_PAPER = {
     ),
 }
 
+# prompt of different tasks for patent dataset
 USER_PROMPT_PATENT = {
     "summary": (
         'Generate an abstract for the patent with the following summary: {}. Limit your response to {} words. Start with "Abstract:".',
@@ -151,7 +154,7 @@ USER_PROMPT_PATENT = {
     ),
 }
 
-
+# prompt of different tasks for poem dataset
 USER_PROMPT_POEM = {
     "summary": (
         'Generate a poem with the following summary: {}. Limit your response to {} words. Start with "Poem:".',

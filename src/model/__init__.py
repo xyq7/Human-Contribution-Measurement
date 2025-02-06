@@ -22,8 +22,8 @@ LLM_NAME_TO_CLASS = OrderedDict(
     ]
 )
 
-
 class AutoLLM:
+    '''Load LLM with LLM_NAME or a yaml config file'''
     @classmethod
     def from_name(cls, name: str):
         if name in LLM_NAME_TO_CLASS:

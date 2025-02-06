@@ -15,6 +15,8 @@ __all__ = [
 
 class LLAMAModel(vLLMModel):
     def load_tokenizer(self):
+        '''Load Llama tokenzier with huggingface.'''
+        
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.config["model_name"], use_fast=False
         )
@@ -31,6 +33,8 @@ class LLAMAModel(vLLMModel):
         return self.tokenizer
 
     def load_model(self):
+        '''Load Llama model with vllm.'''
+        
         tensor_parallel_size = self.kwargs.get("tensor_parallel_size", 1)
         if check_bf16_support():
             dtype = "bfloat16"

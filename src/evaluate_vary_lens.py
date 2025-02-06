@@ -9,6 +9,8 @@ from functools import partial
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import concatenate_datasets, Dataset
 import json
+import seaborn as sns
+import matplotlib.pyplot as plt
 import os
 import yaml
 from tqdm import tqdm
@@ -19,7 +21,8 @@ import fastchat
 import fastchat.model
 
 import argparse
-from config import USER_PROMPT_DICT
+
+from config import USER_PROMPT_DICT, MAX_RETRY, RPREFIX_DICT
 
 
 def parse_args():
@@ -48,17 +51,24 @@ def parse_args():
         choices=["news", "paper", "patent", "poem"],
         help="The dataset name. (e.g. news)",
     )
+
+    parser.add_argument(
+        "--output_figure_dir",
+        type=str,
+        default="./figure/",
+        help="The output directory of the figure.",
+    )
     parser.add_argument(
         "--output_result_dir",
         type=str,
         default="./result/",
-        help="The output directory of the result.",
+        help="The output directory of the figure.",
     )
     parser.add_argument(
         "--output_name",
         type=str,
         default="output",
-        help="The output name.",
+        help="The output name of the figure.",
     )
     parser.add_argument(
         "--resume",
@@ -72,24 +82,34 @@ def parse_args():
         default=None,
         help="The number of samples to evaluate.",
     )
+    parser.add_argument(
+        "--draw_figure",
+        action="store_true",
+        default=False,
+        help="Whether to draw the figure.",
+    )
+    parser.add_argument(
+        "--num_words_list",
+        type=int,
+        nargs="+",
+        default=[100, 200, 300, 400, 500],
+    )
 
     args = parser.parse_args()
     return args
 
 
-def cal_individual_score(
-    id, outputs1, outputs2, target_ids, prompt_length, num_words=None
-):
+def cal_individual_score(id, outputs1, outputs2, target_ids, prompt_length, num_words=None):
     """
-    Construct a conversation prompt using FastChat template
+    Calculate the human contribution score for individual responses
     Args:
-        example: Dictionary containing prompt and response
-        mode: Mode to generate response
-        dataset_name: the name of the dataset
-        model_id: ID of the language model
-        num_words: the number of words required in generation promp
+        outputs1: Model outputs for response-only input
+        outputs2: Model outputs for prompt+response input
+        target_ids: Target token IDs
+        prompt_length: Length of the prompt in tokens
+        num_words: Optional word count
     Returns:
-        Example with added message field containing formatted prompt
+        Dictionary containing entropy scores, cross-entropy scores, and human contribution percentages
     """
     logits1 = outputs1.logits.detach().cpu()
     logits2 = outputs2.logits.detach().cpu()
@@ -127,12 +147,12 @@ def cal_individual_score(
         "human_percent": human_percent,
         "human_percent2": human_percent2,
         "human_percent3": human_percent3,
-        "num_words": num_words,
+        "num_words": num_words
     }
     return rslt
 
 
-def construct_prompt(example, mode, dataset_name, model_id):
+def construct_prompt(example, mode, dataset_name, model_id, num_words):
     """
     Construct a conversation prompt using FastChat template
     Args:
@@ -140,6 +160,7 @@ def construct_prompt(example, mode, dataset_name, model_id):
         mode: Mode to generate response
         dataset_name: the name of the dataset
         model_id: ID of the language model
+        num_words: the number of words required in generation promp
     Returns:
         Example with added message field containing formatted prompt
     """
@@ -148,9 +169,8 @@ def construct_prompt(example, mode, dataset_name, model_id):
     system_prompt = "You are a helpful assistant."
     user_prompt_dict = USER_PROMPT_DICT[dataset_name]
     user_prompt_template, key = user_prompt_dict[mode]
-    abstract_len = len(example["abstract"].split())
 
-    user_prompt = user_prompt_template.format(example[key], abstract_len)
+    user_prompt = user_prompt_template.format(example[key], num_words)
     conv_template.set_system_message(system_prompt)
     conv_template.append_message(conv_template.roles[0], user_prompt)
     conv_template.append_message(conv_template.roles[1], None)
@@ -159,15 +179,17 @@ def construct_prompt(example, mode, dataset_name, model_id):
     return example
 
 
-def get_prompt_dict(file_name, model_id):
+def get_prompt_dict(file_name, model_id, num_words_list):
     """
     Create a dictionary mapping indices to processed prompts
     Args:
         cases: List of prompt-response pairs
         model_id: ID of the language model
+        num_words_list: List of number of words required for generation and evaluation
     Returns:
         Dictionary mapping indices to formatted prompts
     """
+    
     with open(file_name, "r") as file:
         data = json.load(file)
 
@@ -182,33 +204,41 @@ def get_prompt_dict(file_name, model_id):
     dataset = Dataset.from_dict(data_dict)
 
     user_prompt_dict = USER_PROMPT_DICT[args.dataset_name]
-
+  
     datasets = {}
-    for key in user_prompt_dict:
-        datasets[key] = dataset.map(
-            partial(
-                construct_prompt,
-                mode=key,
-                dataset_name=args.dataset_name,
-                model_id=model_id,
-            ),
-            desc="Processing datasets.",
-        )
+    for mode in user_prompt_dict:
+        for num_words in num_words_list:
+            key = f"{mode}-{num_words}"
+            datasets[key] = dataset.map(
+                partial(
+                    construct_prompt,
+                    mode=mode,
+                    dataset_name=args.dataset_name,
+                    model_id=model_id,
+                    num_words=num_words
+                ),
+                desc="Processing datasets.",
+            )
 
-        def set_mode(example, key):
-            example["mode"] = key
-            return example
+            def set_mode(example, key):
+                example["mode"] = key
+                return example
 
-        for key in datasets:
-            datasets[key] = datasets[key].map(partial(set_mode, key=key))
+            def set_num_words(example, num_words):
+                example["num_words"] = num_words
+                return example
+
+            datasets[key] = datasets[key].map(partial(set_mode, key=mode))
+            datasets[key] = datasets[key].map(partial(set_num_words, num_words=num_words))
 
     processed_dataset = concatenate_datasets(list(datasets.values()))
     prompt_dict = {
-        f"{mode}-{index}": prompt
-        for prompt, mode, index in zip(
+        f"{mode}-{index}-{num_words}": prompt
+        for prompt, mode, index, num_words in zip(
             processed_dataset["message"],
             processed_dataset["mode"],
             processed_dataset["id"],
+            processed_dataset["num_words"],
         )
     }
     return prompt_dict
@@ -220,14 +250,17 @@ def cal_loss_wo_rewrite(
     model_id,
     output_name,
     num_samples=None,
+    output_figure_dir="./figure/",
     output_result_dir="./result/",
     device="cuda",
     resume=False,
+    draw_figure=False,
+    num_words_list = None
 ):
     """
     Calculate loss and human contribution scores without rewriting
     Args:
-        response_file: The file with generated responses (generated by generation_llm.py)
+        response_file: The file with generated responses (generated by generation_vary_lens.py)
         dataset_file: The dataset file
         model_id: ID of the language model
         output_name: Name for output files
@@ -235,9 +268,13 @@ def cal_loss_wo_rewrite(
         output_result_dir: Directory for saving results
         device: Computing device (cuda/cpu)
         resume: Whether to resume from previous results
+        draw_figure: Whether to draw figures with the results
+        num_words_list: List of number of words required for generation and evaluation
     Saves results to JSON and JSONL files
     """
-    prompt_dict = get_prompt_dict(dataset_file, model_id)
+    
+    # prompt_dict = get_prompt_dict(dataset_file, model_id)
+    prompt_dict = get_prompt_dict(dataset_file, model_id, num_words_list)
 
     file_path = output_result_dir + output_name + "_origin.json"
     ori_ids = []
@@ -298,7 +335,7 @@ def cal_loss_wo_rewrite(
                     # logits1 = outputs.logits.detach().cpu()
 
                 with torch.no_grad():
-                    prompt = prompt_dict["{}-{}".format(mode, sample["id"])]
+                    prompt = prompt_dict["{}-{}-{}".format(mode, sample["id"], sample["num_words"])]
 
                     # prompt = sample["message"]
                     prompt_tokens = tokenizer(
@@ -327,7 +364,7 @@ def cal_loss_wo_rewrite(
                     outputs2,
                     response_tokens + [tokenizer.eos_token_id],
                     len(prompt_tokens),
-                    num_words=sample.get("num_words", None),
+                    num_words=sample.get("num_words", None)
                 )
 
                 ces[mode].append(rslt)
@@ -340,8 +377,204 @@ def cal_loss_wo_rewrite(
         ) as writer:
             writer.write_all(out)
 
+    if not draw_figure:
+        return
 
-def load_model(model_id, device="cuda"):
+    if "subject" not in ces:
+        data = [ori["original"], ces["polish"], ces["summary"], ces["gen"]]
+        names_fig = ["Original", "Polish", "Generate\nw/ Summary", "Generate\nw/ Title"]
+        names = ["Original", "Polish", "Gen-Summary", "Gen-Title"]
+        names_fig2 = [
+            "Original",
+            "Polish",
+            "Polish\nAttack1",
+            "Polish\nAttack2",
+            "Generate\nw/ Summary",
+            "Generate\nw/ Summary\nAttack1",
+            "Generate\nw/ Summary\nAttack2",
+            "Generate\nw/ Title",
+            "Generate\nw/ Title\nAttack1",
+            "Generate\nw/ Title\nAttack2",
+        ]
+    else:
+        data = [
+            ori["original"],
+            ces["polish"],
+            ces["summary"],
+            ces["gen"],
+            ces["subject"],
+        ]
+        names_fig = [
+            "Original",
+            "Polish",
+            "Generate\nw/ Summary",
+            "Generate\nw/ Title",
+            "Generate\nw/ Subject",
+        ]
+        names = ["Original", "Polish", "Gen-Summary", "Gen-Title", "Gen-Subject"]
+        names_fig2 = [
+            "Original",
+            "Polish",
+            "Polish\nAttack1",
+            "Polish\nAttack2",
+            "Generate\nw/ Summary",
+            "Generate\nw/ Summary\nAttack1",
+            "Generate\nw/ Summary\nAttack2",
+            "Generate\nw/ Title",
+            "Generate\nw/ Title\nAttack1",
+            "Generate\nw/ Title\nAttack2",
+            "Generate\nw/ Subject",
+            "Generate\nw/ Subject\nAttack1",
+            "Generate\nw/ Subject\nAttack2",
+        ]
+
+    plt.figure(figsize=(6, 4.5))
+
+    color_palette = sns.color_palette("turbo", len(data))
+    ax = sns.violinplot(
+        data=data,
+        palette=color_palette,
+        inner=None,
+        scale="width",
+        linewidth=0,
+        saturation=0.4,
+    )
+    sns.boxplot(
+        data=data,
+        palette=color_palette,
+        width=0.2,
+        flierprops={"marker": "x"},
+        boxprops={"zorder": 2, "linewidth": 1},
+        whiskerprops={"linewidth": 1, "linestyle": "dotted"},
+        medianprops={"linestyle": "--", "linewidth": 1},
+        ax=ax,
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    handles, labels = [], []
+
+    boxes = [
+        plt.Rectangle(
+            (0, 0), 1, 1, fc=color_palette[i], label="Box", zorder=2, edgecolor="black"
+        )
+        for i in range(len(data))
+    ]
+    centerline = plt.Line2D([0], [0], color="black", linestyle="--", label="Centerline")
+    limits = plt.Line2D([0], [0], color="black", linestyle="-", label="Limits")
+    whiskers = plt.Line2D([0], [0], color="black", linestyle="dotted", label="Whiskers")
+    points = plt.Line2D(
+        [0], [0], marker="x", markersize=5, color="black", linestyle="", label="Points"
+    )
+
+    # Append to handles and labels lists'Original',
+    handles.extend(boxes + [centerline, limits, whiskers, points])
+    labels.extend(
+        ["{} (n={})".format(name, len(data[i])) for i, name in enumerate(names)]
+    )
+    # legend = ax.legend(loc='upper center', ncol=2, handles=handles, labels=labels, bbox_to_anchor=(0.5, 1.3))
+    plt.xticks(range(len(data)), names_fig)
+    # plt.xlabel("ASR", fontsize=13)
+    plt.ylim(0, 5)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig(output_figure_dir + output_name + ".png", dpi=300, bbox_inches="tight")
+    plt.savefig(output_figure_dir + output_name + ".pdf", dpi=300, bbox_inches="tight")
+    plt.clf()
+
+    if "subject" not in ces:
+        data = [
+            ori["original"],
+            ces["polish"],
+            ces["polish_ada1"],
+            ces["polish_ada2"],
+            ces["summary"],
+            ces["summary_ada1"],
+            ces["summary_ada2"],
+            ces["gen"],
+            ces["gen_ada1"],
+            ces["gen_ada2"],
+        ]
+    else:
+        data = [
+            ori["original"],
+            ces["polish"],
+            ces["polish_ada1"],
+            ces["polish_ada2"],
+            ces["summary"],
+            ces["summary_ada1"],
+            ces["summary_ada2"],
+            ces["gen"],
+            ces["gen_ada1"],
+            ces["gen_ada2"],
+            ces["subject"],
+            ces["subject_ada1"],
+            ces["subject_ada2"],
+        ]
+
+    plt.figure(figsize=(16, 4.5))
+
+    color_palette = sns.color_palette("turbo", len(data))
+    ax = sns.violinplot(
+        data=data,
+        palette=color_palette,
+        inner=None,
+        scale="width",
+        linewidth=0,
+        saturation=0.4,
+    )
+    sns.boxplot(
+        data=data,
+        palette=color_palette,
+        width=0.2,
+        flierprops={"marker": "x"},
+        boxprops={"zorder": 2, "linewidth": 1},
+        whiskerprops={"linewidth": 1, "linestyle": "dotted"},
+        medianprops={"linestyle": "--", "linewidth": 1},
+        ax=ax,
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    handles, labels = [], []
+
+    boxes = [
+        plt.Rectangle(
+            (0, 0), 1, 1, fc=color_palette[i], label="Box", zorder=2, edgecolor="black"
+        )
+        for i in range(len(data))
+    ]
+    centerline = plt.Line2D([0], [0], color="black", linestyle="--", label="Centerline")
+    limits = plt.Line2D([0], [0], color="black", linestyle="-", label="Limits")
+    whiskers = plt.Line2D([0], [0], color="black", linestyle="dotted", label="Whiskers")
+    points = plt.Line2D(
+        [0], [0], marker="x", markersize=5, color="black", linestyle="", label="Points"
+    )
+
+    # Append to handles and labels lists'Original',
+    handles.extend(boxes + [centerline, limits, whiskers, points])
+    # names = ['Original', 'Polish', 'Gen-Summary', 'Gen-Title', 'Gen-Title-Ada1','Gen-Title-Ada2', 'Gen-Subject','Gen-Subject-Ada1','Gen-Subject-Ada2']
+    # labels.extend(["{} (n={})".format(name,len(data[i])) for i, name in enumerate(names)] )
+    # legend = ax.legend(loc='upper center', ncol=2, handles=handles, labels=labels, bbox_to_anchor=(0.5, 1.3))
+    plt.xticks(range(len(data)), names_fig2)
+    # plt.xlabel("ASR", fontsize=13)
+    plt.ylim(0, 5)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.tight_layout()
+    plt.savefig(
+        output_figure_dir + output_name + "ada.png", dpi=300, bbox_inches="tight"
+    )
+    plt.savefig(
+        output_figure_dir + output_name + "ada.pdf", dpi=300, bbox_inches="tight"
+    )
+    plt.clf()
+
+
+def load_model(model_id="/home/yueqi/LLMana/Llama-2-7b-chat-hf", device="cuda"):
     model = AutoModelForCausalLM.from_pretrained(
         model_id, torch_dtype=torch.float16, trust_remote_code=True, device_map="auto"
     )
@@ -359,6 +592,7 @@ if __name__ == "__main__":
     with open(args.llm_config_file, "r") as f:
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
+    Path(args.output_figure_dir).mkdir(parents=True, exist_ok=True)
     Path(args.output_result_dir).mkdir(parents=True, exist_ok=True)
 
     cal_loss_wo_rewrite(
@@ -368,6 +602,8 @@ if __name__ == "__main__":
         args.dataset_name,
         args.output_name + "_wo_rewrite",
         num_samples=args.num_samples,
+        output_figure_dir=args.output_figure_dir,
         output_result_dir=args.output_result_dir,
         resume=args.resume,
+        num_words_list = args.num_words_list
     )

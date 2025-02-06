@@ -20,6 +20,7 @@ import fastchat.model
 
 import argparse
 
+# Sample test cases containing prompts and their corresponding responses
 cases = [
     {
         "prompt": """Rewrite this in the Second Person perspective: You are Alex, a gifted young man with the rare ability to translate foreign languages, earns a full scholarship to Mogi College - an exclusive institution reserved only for Monster Girls. He makes history by becoming the first and only male human student in the college. Monster girls are captivating female creatures with human-like features, but adorned with distinctive animal or monster attributes.
@@ -152,6 +153,17 @@ def parse_args():
 def cal_individual_score(
     id, outputs1, outputs2, target_ids, prompt_length, num_words=None
 ):
+    """
+    Calculate the human contribution score for individual responses
+    Args:
+        outputs1: Model outputs for response-only input
+        outputs2: Model outputs for prompt+response input
+        target_ids: Target token IDs
+        prompt_length: Length of the prompt in tokens
+        num_words: Optional word count
+    Returns:
+        Dictionary containing entropy scores, cross-entropy scores, and human contribution percentages
+    """
     logits1 = outputs1.logits.detach().cpu()
     logits2 = outputs2.logits.detach().cpu()
 
@@ -194,6 +206,14 @@ def cal_individual_score(
 
 
 def construct_prompt(example, model_id):
+    """
+    Construct a conversation prompt using FastChat template
+    Args:
+        example: Dictionary containing prompt and response
+        model_id: ID of the language model
+    Returns:
+        Example with added message field containing formatted prompt
+    """
     conv_template = fastchat.model.get_conversation_template(model_id)
 
     system_prompt = "You are a helpful assistant."
@@ -208,6 +228,15 @@ def construct_prompt(example, model_id):
 
 
 def get_prompt_dict(cases, model_id):
+    """
+    Create a dictionary mapping indices to processed prompts
+    Args:
+        cases: List of prompt-response pairs
+        model_id: ID of the language model
+    Returns:
+        Dictionary mapping indices to formatted prompts
+    """
+    
     data_dict = defaultdict(list)
     for idx, case in enumerate(cases):
         data_dict["id"].append(idx)
@@ -242,6 +271,18 @@ def cal_loss_wo_rewrite(
     device="cuda",
     resume=False,
 ):
+    """
+    Calculate loss and human contribution scores without rewriting
+    Args:
+        cases: List of prompt-response pairs
+        model_id: ID of the language model
+        output_name: Name for output files
+        output_result_dir: Directory for saving results
+        device: Computing device (cuda/cpu)
+        resume: Whether to resume from previous results
+    Saves results to JSON and JSONL files
+    """
+    
     prompt_dict = get_prompt_dict(cases, model_id)
 
     file_path = output_result_dir + output_name + "_ces.json"
@@ -308,6 +349,14 @@ def cal_loss_wo_rewrite(
 
 
 def load_model(model_id, device="cuda"):
+    """
+    Load the language model and tokenizer
+    Args:
+        model_id: ID of the language model
+        device: Computing device (cuda/cpu)
+    Returns:
+        Tuple of (model, tokenizer)
+    """
     model = AutoModelForCausalLM.from_pretrained(
         model_id, torch_dtype=torch.float16, trust_remote_code=True, device_map="auto"
     )
