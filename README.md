@@ -166,7 +166,7 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
-### Impact of temperation
+### Impact of temperature
 
 Generate responses with varying lengths.
 ```bash
