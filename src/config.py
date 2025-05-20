@@ -24,6 +24,22 @@ USER_PROMPT_NEWS = {
         'Generate a news article with the title: {}. Mimic human writing. Limit your response to {} words. Start with "News:".',
         "title",
     ),
+    "gen_style1": (
+        'Generate a news article with the title: {}. Generate in an informal style. Limit your response to {} words. Start with "News:".',
+        "title",
+    ),
+    "gen_style2": (
+        'Generate a news article with the title: {}. Generate in a formal style. Limit your response to {} words. Start with "News:".',
+        "title",
+    ),
+    "gen_style3": (
+        'Generate a news article with the title: {}. Generate in a vivid story-telling style. Limit your response to {} words. Start with "News:".',
+        "title",
+    ),
+    "gen_style4": (
+        'Generate a news article with the title: {}. Generate in an objective news reporting style. Limit your response to {} words. Start with "News:".',
+        "title",
+    ),
     "subject_ada1": (
         'Generate a news article with the subject: {}. Always choose words you rarely use. Limit your response to {} words. Start with "News:".',
         "subject",
@@ -32,20 +48,68 @@ USER_PROMPT_NEWS = {
         'Generate a news article with the subject: {}. Mimic human writing. Limit your response to {} words. Start with "News:".',
         "subject",
     ),
+    "subject_style1": (
+        'Generate a news article with the subject: {}. Generate in an informal style. Limit your response to {} words. Start with "News:".',
+        "subject",
+    ),
+    "subject_style2": (
+        'Generate a news article with the subject: {}. Generate in a formal style. Limit your response to {} words. Start with "News:".',
+        "subject",
+    ),
+    "subject_style3": (
+        'Generate a news article with the subject: {}. Generate in a vivid story-telling style. Limit your response to {} words. Start with "News:".',
+        "subject",
+    ),
+    "subject_style4": (
+        'Generate a news article with the subject: {}. Generate in an objective news reporting style. Limit your response to {} words. Start with "News:".',
+        "subject",
+    ),
     "polish_ada1": (
-        "Help me polish the following news article: {}. Always choose words you rarely use. Limit your response to {} words. Start with 'News:'.",
+        'Help me polish the following news article: {}. Always choose words you rarely use. Limit your response to {} words. Start with "News:".',
         "abstract",
     ),
     "polish_ada2": (
-        "Help me polish the following news article: {}. Mimic human writing. Limit your response to {} words. Start with 'News:'.",
+        'Help me polish the following news article: {}. Mimic human writing. Limit your response to {} words. Start with "News:".',
+        "abstract",
+    ),
+    "polish_style1": (
+        'Help me polish the following news article: {}. Generate in an informal style. Limit your response to {} words. Start with "News:".',
+        "abstract",
+    ),
+    "polish_style2": (
+        'Help me polish the following news article: {}. Generate in a formal style. Limit your response to {} words. Start with "News:".',
+        "abstract",
+    ),
+    "polish_style3": (
+        'Help me polish the following news article: {}. Generate in a vivid story-telling style. Limit your response to {} words. Start with "News:".',
+        "abstract",
+    ),
+    "polish_style4": (
+        'Help me polish the following news article: {}. Generate in an objective news reporting style. Limit your response to {} words. Start with "News:".',
         "abstract",
     ),
     "summary_ada1": (
-        "Generate a news article with the following summary: {}. Always choose words you rarely use. Limit your response to {} words. Start with 'News:'.",
+        'Generate a news article with the following summary: {}. Always choose words you rarely use. Limit your response to {} words. Start with "News:".',
         "summary",
     ),
     "summary_ada2": (
-        "Generate a news article with the following summary: {}. Mimic human writing. Limit your response to {} words. Start with 'News:'.",
+        'Generate a news article with the following summary: {}. Mimic human writing. Limit your response to {} words. Start with "News:".',
+        "summary",
+    ),
+    "summary_style1": (
+        'Generate a news article with the following summary: {}. Generate in an informal style. Limit your response to {} words. Start with "News:".',
+        "summary",
+    ),
+    "summary_style2": (
+        'Generate a news article with the following summary: {}. Generate in a formal style. Limit your response to {} words. Start with "News:".',
+        "summary",
+    ),
+    "summary_style3": (
+        'Generate a news article with the following summary: {}. Generate in a vivid story-telling style. Limit your response to {} words. Start with "News:".',
+        "summary",
+    ),
+    "summary_style4": (
+        'Generate a news article with the following summary: {}. Generate in an objective news reporting style. Limit your response to {} words. Start with "News:".',
         "summary",
     ),
 }

@@ -9,7 +9,7 @@ from tqdm import tqdm
 from openai import (
     RateLimitError,
     BadRequestError,
-    Timeout,
+    APITimeoutError,
     APIConnectionError,
     InternalServerError,
     APIError,
@@ -19,7 +19,7 @@ from accelerate.logging import get_logger
 
 from .base import BaseModel
 
-__all__ = ["GPTModel", "GPT35", "GPT4"]
+__all__ = ["GPTModel", "GPT35", "GPT4", "GEMINI"]
 
 logger = get_logger(__name__)
 
@@ -59,30 +59,39 @@ class GPTModel(BaseModel):
         success = False
         while not success:
             try:
-                response = self.client.chat.completions.create(
-                    model=self.config.get("model", None),
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    frequency_penalty=frequency_penalty,
-                    presence_penalty=presence_penalty,
-                )
+                if "gemini" in self.config.get("model", None):
+                    # Gemini model does not support frequency_penalty and presence_penalty using OpenAI API
+                    response = self.client.chat.completions.create(
+                        model=self.config.get("model", None),
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                    )
+                else:
+                    response = self.client.chat.completions.create(
+                        model=self.config.get("model", None),
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        frequency_penalty=frequency_penalty,
+                        presence_penalty=presence_penalty,
+                    )
                 success = True
             except RateLimitError as e:
-                # logger.warning(e, exc_info=True)
+                logger.warning(e, exc_info=True)
                 retry_time = get_retry_time(str(e))
                 time.sleep(retry_time)
-            except Timeout as e:
-                logger.debug(e, exc_info=True)
+            except APITimeoutError as e:
+                logger.warning(e, exc_info=True)
                 time.sleep(1)
             except APIConnectionError as e:
-                logger.debug(e, exc_info=True)
+                logger.warning(e, exc_info=True)
                 time.sleep(1)
             except APIError as e:
-                logger.debug(e, exc_info=True)
+                logger.warning(e, exc_info=True)
                 time.sleep(1)
             except InternalServerError as e:
-                logger.debug(e, exc_info=True)
+                logger.warning(e, exc_info=True)
                 time.sleep(1)
             except BadRequestError as e:
                 logger.warning(e, exc_info=True)
@@ -113,21 +122,29 @@ class GPTModel(BaseModel):
         success = False
         while not success:
             try:
-                response = self.client.completions.create(
-                    model=self.config.get("model", None),
-                    messages=messages,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    frequency_penalty=frequency_penalty,
-                    presence_penalty=presence_penalty,
-                    stop=stop,
-                )
+                if "gemini" in self.config.get("model", None):
+                    response = self.client.completions.create(
+                        model=self.config.get("model", None),
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                    )
+                else:
+                    response = self.client.completions.create(
+                        model=self.config.get("model", None),
+                        messages=messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        frequency_penalty=frequency_penalty,
+                        presence_penalty=presence_penalty,
+                        stop=stop,
+                    )
                 success = True
             except RateLimitError as e:
                 # logger.warning(e, exc_info=True)
                 retry_time = get_retry_time(str(e))
                 time.sleep(retry_time)
-            except Timeout as e:
+            except APITimeoutError as e:
                 logger.debug(e, exc_info=True)
                 time.sleep(1)
             except APIConnectionError as e:
@@ -208,6 +225,15 @@ class GPT35(GPTModelWSystem):
 
 class GPT4(GPTModelWSystem):
     pass
+
+
+class GEMINI(GPTModelWSystem):
+    def __init__(self, *, config: str | dict = None, **kwargs):
+        self.config = self.load_config(config)
+        self.client = openai.OpenAI(
+            api_key=self.config.get("api_key", None),
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        )
 
 
 class GPTModelWOSystem(GPTModel):

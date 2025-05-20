@@ -86,6 +86,8 @@ def check_success(response, rprefix):
     Returns:
         Boolean indicating if the response contains the prefix
     """
+    if not isinstance(response, str):
+        return False
     return response.rfind(rprefix) != -1
 
 
@@ -102,12 +104,28 @@ def parse_args():
             "subject",
             "gen_ada1",
             "gen_ada2",
+            "gen_style1",
+            "gen_style2",
+            "gen_style3",
+            "gen_style4",
             "polish_ada1",
             "polish_ada2",
+            "polish_style1",
+            "polish_style2",
+            "polish_style3",
+            "polish_style4",
             "summary_ada1",
             "summary_ada2",
+            "summary_style1",
+            "summary_style2",
+            "summary_style3",
+            "summary_style4",
             "subject_ada1",
-            "subject_ada2"
+            "subject_ada2",
+            "subject_style1",
+            "subject_style2",
+            "subject_style3",
+            "subject_style4",
         ],
         default=["summary", "polish", "gen", "subject"],
     )

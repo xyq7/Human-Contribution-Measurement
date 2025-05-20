@@ -1,0 +1,5 @@
+api_key: "YOUR_ANTHROPIC_API_KEY"
+api_type: "anthropic"
+model: "claude-3-5-haiku-20241022"
+chat: True
+llm_name: "claude"

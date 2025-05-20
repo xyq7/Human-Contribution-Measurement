@@ -3,10 +3,12 @@ from pathlib import Path
 from collections import OrderedDict
 from accelerate.logging import get_logger
 
-from .gpt import GPT35, GPT4, GPT35WOSystem, GPT4WOSystem
+from .claude import CLAUDE
+from .gpt import GPT35, GPT4, GPT35WOSystem, GPT4WOSystem, GEMINI
 from .llama import (
     Vicuna,
     Llama2,
+    Llama3,
 )
 from .vllm_worker import Mixtral
 
@@ -16,14 +18,17 @@ LLM_NAME_TO_CLASS = OrderedDict(
     [
         ("vicuna", Vicuna),
         ("llama2", Llama2),
+        ("llama3", Llama3),
         ("mixtral", Mixtral),
         ("gpt35", GPT35),
         ("gpt35_wosys", GPT35WOSystem),
+        ("claude", CLAUDE),
+        ("gemini", GEMINI),
     ]
 )
 
+
 class AutoLLM:
-    '''Load LLM with LLM_NAME or a yaml config file'''
     @classmethod
     def from_name(cls, name: str):
         if name in LLM_NAME_TO_CLASS:
