@@ -289,7 +289,7 @@ def cal_loss_wo_rewrite(
 
                     input_ids = torch.tensor(
                         np.array([tokenizer(extracted_text).input_ids])
-                    ).to(device)
+                    ).to(model.device)
 
                     target_ids = input_ids.clone()
                     sep = 1
@@ -315,7 +315,7 @@ def cal_loss_wo_rewrite(
                         + [tokenizer.eos_token_id]
                     )
 
-                    input_ids = torch.tensor([extracted_text]).to(device)
+                    input_ids = torch.tensor([extracted_text]).to(model.device)
                     target_ids = input_ids.clone()
                     sep = len(prompt_tokens) + 1
                     target_ids[:, :sep] = -100
