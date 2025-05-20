@@ -21,6 +21,7 @@ We hope that this work lays a foundation for measuring human contributions in AI
 - [src](./src): source code to reproduce results in the manuscript.
 - [script](./script): scripts to run the experiments.
 - [data_code](./data_code): source code to prepare the dataset.
+- [data_new](./data_new): directory to store the dataset.
 
 ## System Requirements
 
@@ -71,6 +72,8 @@ Since this package requires access to the OpenAI API, you will need to register 
 The code has been test with OpenAI Services.
 Setup the your OpenAI API key in `src/config/gpt35.yaml`.
 
+Anthropic Claude and Google Gemini API keys are also supported. They can be setup in `src/config/claude.yaml` and `src/config/gemini.yaml` respectively.
+
 We also conduct experiments with Meta-Llama-3-8B-Instruct and Mixtral-8x7B-Instruct-v0.1. Please apply for LLAMA-3 access on the [official meta website](https://llama.meta.com/llama-downloads/) and the [huggingface repo](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct). Then set your huggingface access token before running experiments.
 
 ```bash
@@ -109,7 +112,7 @@ python data_code/generate_summary_paper.py
 bash script/generate.sh {data} {model} {time}
 ```
 Parameters:
-- model: The model used for generating responses. The options include: `["gpt35", "llama3_8b", "mixtral_8x7b"]`
+- model: The model used for generating responses. The options include: `["claude", "gemini", "gpt35", "llama3_8b", "mixtral_8x7b"]`
 - data: The dataset used for generating responses. The options include: `["news", "paper", "patent", "poem"]`
 - time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
 
@@ -122,7 +125,7 @@ Parameters:
 
 - data: The dataset on which the evaluation is performed. The options include: `["news", "paper", "patent", "poem"]`
 - eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b", "mixtral_8x7b"]`
-- model: The model whose responses are being evaluated. The options include: `["gpt35", "llama3_8b", "mixtral_8x7b"]`
+- model: The model whose responses are being evaluated. The options include: `["claude", "gemini", "gpt35", "llama3_8b", "mixtral_8x7b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
 ### Impact of Response Length
@@ -188,3 +191,45 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 - temperature: The temperature used for generation
+
+### Impact of writing style
+
+Generate responses with varying writing styles.
+```bash
+bash script/style.sh {data} {model} {time}
+```
+Parameters:
+- model: The model used for generating responses. The options include: `["llama3_8b"]`
+- data: The dataset used for generating responses. The options include: `["news"]`
+- time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
+
+Measure human contribution.
+```bash
+bash script/eval_style.sh {data} {eval_model} {model} {time}
+```
+Parameters:
+- data: The dataset on which the evaluation is performed. The options include: `["news"]`
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b"]`
+- model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
+- time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
+
+### Applications to Real-World AI-Assisted generation
+
+Generate responses using real world AI-assisted prompts collected from WildChat dataset.
+```bash
+bash script/app.sh {data} {model} {time}
+```
+Parameters:
+- model: The model used for generating responses. The options include: `["llama3_8b", "mixtral_8x7b"]`
+- data: The dataset used for generating responses. The options include: `["assisting_creative", "editing_rewriting"]`
+- time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
+
+Measure human contribution.
+```bash
+bash script/eval_app.sh {data} {eval_model} {model} {time}
+```
+Parameters:
+- data: The dataset on which the evaluation is performed. The options include: `["assisting_creative", "editing_rewriting"]`
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b", "mixtral_8x7b"]`
+- model: The model whose responses are being evaluated. The options include: `["llama3_8b", "mixtral_8x7b"]`
+- time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
