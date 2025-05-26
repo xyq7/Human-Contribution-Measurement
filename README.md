@@ -247,3 +247,24 @@ Parameters:
 - eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b", "mixtral_8x7b"]`
 - model: The model whose responses are being evaluated. The options include: `["claude", "gemini", "gpt35", "llama3_8b", "mixtral_8x7b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
+
+
+### Multi-round Generation
+
+Generate responses in different multi-round scenarios.
+```bash
+bash script/multi.sh {data} {model} {scenario}
+```
+Parameters:
+- data: The dataset used for generating responses. The options include: `["news"]`
+- model: The model used for generating responses. The options include: `["llama3_8b"]`
+- scenario: The scenario used for generating responses. The options include: `[1, 2, 3, 4]`
+
+Measure human contribution.
+```bash
+bash script/eval_multi.sh {data} {eval_model} {scenario}
+```
+Parameters:
+- data: The dataset on which the evaluation is performed. The options include: `["news"]`
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b"]`
+- scenario: The scenario used for generating responses. The options include: `[1, 2, 3, 4]`
