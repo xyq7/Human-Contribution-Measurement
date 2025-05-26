@@ -76,60 +76,24 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-def cal_individual_score(
-    id, outputs1, outputs2, target_ids, prompt_length, num_words=None
+def est_individual_score(
+    id, outputs1, neglogtau
 ):
     """
-    Construct a conversation prompt using FastChat template
+    Estimate human contribution
     Args:
-        example: Dictionary containing prompt and response
-        mode: Mode to generate response
-        dataset_name: the name of the dataset
-        model_id: ID of the language model
-        num_words: the number of words required in generation promp
+        id: ID of the input
+        outputs1: The output to estimate human contribution
+        neglogtau: The estimation threshold for the mean conditional information
     Returns:
         Example with added message field containing formatted prompt
     """
-    logits1 = outputs1.logits.detach().cpu()
-    logits2 = outputs2.logits.detach().cpu()
-
     nll1 = outputs1.loss.item()
-    nll2 = outputs2.loss.item()
 
-    probabilities = F.softmax(logits1[:, :-1], dim=-1)
-    probabilities2 = F.softmax(logits2[:, prompt_length:-1], dim=-1)
+    import math
+    human_percent3 = (nll1-neglogtau) / nll1
 
-    collaborative_one_hot = F.one_hot(
-        torch.tensor(target_ids), num_classes=probabilities.size(-1)
-    ).float()
-
-    entropy = -torch.sum(probabilities * torch.log(probabilities), dim=-1)
-    entropy2 = -torch.sum(probabilities2 * torch.log(probabilities2), dim=-1)
-
-    ce = -torch.sum(collaborative_one_hot * torch.log(probabilities), dim=-1)
-    ce2 = -torch.sum(collaborative_one_hot * torch.log(probabilities2), dim=-1)
-
-    human_percent = (
-        (torch.sum(entropy) - torch.sum(entropy2)) / torch.sum(entropy)
-    ).item()
-    human_percent2 = ((torch.sum(ce) - torch.sum(ce2)) / torch.sum(ce)).item()
-    human_percent3 = (nll1 - nll2) / nll1
-
-    rslt = {
-        "id": id,
-        "en": entropy.squeeze().cpu().numpy().tolist(),
-        "en2": entropy2.squeeze().cpu().numpy().tolist(),
-        "ce": ce.squeeze().cpu().numpy().tolist(),
-        "ce2": ce2.squeeze().cpu().numpy().tolist(),
-        "nll1": nll1,
-        "nll2": nll2,
-        "human_percent": human_percent,
-        "human_percent2": human_percent2,
-        "human_percent3": human_percent3,
-        "num_words": num_words,
-    }
-    return rslt
+    return human_percent3
 
 
 def construct_prompt(example, mode, dataset_name, model_id):
@@ -223,6 +187,7 @@ def cal_loss_wo_rewrite(
     output_result_dir="./result/",
     device="cuda",
     resume=False,
+    neglogtau=None
 ):
     """
     Calculate loss and human contribution scores without rewriting
@@ -235,6 +200,7 @@ def cal_loss_wo_rewrite(
         output_result_dir: Directory for saving results
         device: Computing device (cuda/cpu)
         resume: Whether to resume from previous results
+        neglogtau: The estimation threshold for the mean conditional information
     Saves results to JSON and JSONL files
     """
     prompt_dict = get_prompt_dict(dataset_file, model_id)
@@ -266,7 +232,6 @@ def cal_loss_wo_rewrite(
         with open(response_file, "r") as file:
             for idx, line in tqdm(enumerate(file)):
                 sample = json.loads(line)
-
                 if sample["id"] not in ori_ids:
                     continue
 
@@ -275,14 +240,6 @@ def cal_loss_wo_rewrite(
                     ces[mode] = []
 
                 response = sample["response"]
-                # start_token_dict = {
-                #     "paper": "Abstract:",
-                #     "news": "News:",
-                #     "patent": "Abstract:",
-                #     "poem": "Poem:",
-                # }
-                # last_start_index = response.rfind(start_token_dict[key])
-                # response = response[last_start_index + len(start_token_dict[key]) :].strip()
 
                 with torch.no_grad():
                     extracted_text = response + tokenizer.eos_token
@@ -297,46 +254,20 @@ def cal_loss_wo_rewrite(
                     outputs1 = model(input_ids, labels=target_ids)
                     # logits1 = outputs.logits.detach().cpu()
 
-                with torch.no_grad():
-                    prompt = prompt_dict["{}-{}".format(mode, sample["id"])]
 
-                    # prompt = sample["message"]
-                    prompt_tokens = tokenizer(
-                        prompt, add_special_tokens=False
-                    ).input_ids
-                    response_tokens = tokenizer(
-                        response, add_special_tokens=False
-                    ).input_ids
-
-                    extracted_text = (
-                        [tokenizer.bos_token_id]
-                        + prompt_tokens
-                        + response_tokens
-                        + [tokenizer.eos_token_id]
-                    )
-
-                    input_ids = torch.tensor([extracted_text]).to(model.device)
-                    target_ids = input_ids.clone()
-                    sep = len(prompt_tokens) + 1
-                    target_ids[:, :sep] = -100
-                    outputs2 = model(input_ids, labels=target_ids)
-
-                rslt = cal_individual_score(
+                rslt = est_individual_score(
                     sample["id"],
                     outputs1,
-                    outputs2,
-                    response_tokens + [tokenizer.eos_token_id],
-                    len(prompt_tokens),
-                    num_words=sample.get("num_words", None),
+                    neglogtau
                 )
 
                 ces[mode].append(rslt)
                 out.append(rslt)
 
-        with open(output_result_dir + output_name + "_ces.json", "w") as json_file:
+        with open(output_result_dir + output_name + "_est_ces.json", "w") as json_file:
             json.dump(ces, json_file)
         with jsonlines.open(
-            output_result_dir + output_name + "_ces_id.json", "w"
+            output_result_dir + output_name + "_est_ces_id.json", "w"
         ) as writer:
             writer.write_all(out)
 
@@ -360,7 +291,13 @@ if __name__ == "__main__":
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
     Path(args.output_result_dir).mkdir(parents=True, exist_ok=True)
-
+    # import pdb; pdb.set_trace()
+    # define threshold according to evaluation model
+    if config["model_name"] == "mixtral_8x7b": 
+        neglogtau = 0.1979 + 0.2176
+    elif config["model_name"] == 'meta-llama/Meta-Llama-3-8B-Instruct': 
+        neglogtau = 0.3760 + 0.1736
+        
     cal_loss_wo_rewrite(
         args.response_file,
         args.dataset_file,
@@ -368,5 +305,7 @@ if __name__ == "__main__":
         args.output_name + "_wo_rewrite",
         num_samples=args.num_samples,
         output_result_dir=args.output_result_dir,
+        device="cuda",
         resume=args.resume,
+        neglogtau=neglogtau,
     )

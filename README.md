@@ -117,7 +117,7 @@ Parameters:
 - time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
 
 
-### Human Evaluation Measurement
+### Human Evaluation Evaluation (Generalization of Our Method)
 ```bash
 bash script/evaluate.sh {data} {eval_model} {model} {time}
 ```
@@ -128,7 +128,7 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["claude", "gemini", "gpt35", "llama3_8b", "mixtral_8x7b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
-### Impact of Response Length
+### Human Evaluation Evaluation - Controlled Experiments
 Generate responses with varying lengths.
 ```bash
 bash script/very_lens.sh {data} {model} {time}
@@ -148,28 +148,7 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
-### Adaptive attack
-
-Generate responses with adaptive attacks.
-```bash
-bash script/ada.sh {data} {model} {time}
-```
-Parameters:
-- model: The model used for generating responses. The options include: `["llama3_8b"]`
-- data: The dataset used for generating responses. The options include: `["news", "paper", "patent", "poem"]`
-- time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
-
-Measure human contribution.
-```bash
-bash script/eval_ada.sh {data} {eval_model} {model} {time}
-```
-Parameters:
-- data: The dataset on which the evaluation is performed. The options include: `["news", "paper", "patent", "poem"]`
-- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b"]`
-- model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
-- time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
-
-### Impact of temperature
+### Impact of Generative Model Temperature
 
 Generate responses with varying lengths.
 ```bash
@@ -192,7 +171,7 @@ Parameters:
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 - temperature: The temperature used for generation
 
-### Impact of writing style
+### Impact of Writing Style
 
 Generate responses with varying writing styles.
 ```bash
@@ -213,7 +192,30 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
-### Applications to Real-World AI-Assisted generation
+### Resilience to Adaptive Attacks
+
+Generate responses with adaptive attacks.
+```bash
+bash script/ada.sh {data} {model} {time}
+```
+Parameters:
+- model: The model used for generating responses. The options include: `["llama3_8b"]`
+- data: The dataset used for generating responses. The options include: `["news", "paper", "patent", "poem"]`
+- time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
+
+Measure human contribution.
+```bash
+bash script/eval_ada.sh {data} {eval_model} {model} {time}
+```
+Parameters:
+- data: The dataset on which the evaluation is performed. The options include: `["news", "paper", "patent", "poem"]`
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b"]`
+- model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
+- time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
+
+
+
+### Applications to Real-World AI-Assisted Generation
 
 Generate responses using real world AI-assisted prompts collected from WildChat dataset.
 ```bash
@@ -232,4 +234,16 @@ Parameters:
 - data: The dataset on which the evaluation is performed. The options include: `["assisting_creative", "editing_rewriting"]`
 - eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b", "mixtral_8x7b"]`
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b", "mixtral_8x7b"]`
+- time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
+
+
+### Human Contribution Estimation Without Human Input
+```bash
+bash script/estimate.sh {data} {eval_model} {model} {time}
+```
+Parameters:
+
+- data: The dataset on which the evaluation is performed. The options include: `["news", "paper", "patent", "poem"]`
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b", "mixtral_8x7b"]`
+- model: The model whose responses are being evaluated. The options include: `["claude", "gemini", "gpt35", "llama3_8b", "mixtral_8x7b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
