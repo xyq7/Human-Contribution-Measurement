@@ -117,7 +117,7 @@ Parameters:
 - time: The index for repeated experiments. The options include: `[1, 2, 3, 4, 5]`
 
 
-### Human Evaluation Evaluation (Generalization of Our Method)
+### Human Contribution Evaluation (Generalization of Our Method)
 ```bash
 bash script/evaluate.sh {data} {eval_model} {model} {time}
 ```
