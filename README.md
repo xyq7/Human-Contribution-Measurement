@@ -128,7 +128,7 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["claude", "gemini", "gpt35", "llama3_8b", "mixtral_8x7b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
-### Human Evaluation Evaluation - Controlled Experiments
+### Human Contribution Evaluation - Controlled Experiments
 Generate responses with varying lengths.
 ```bash
 bash script/very_lens.sh {data} {model} {time}
