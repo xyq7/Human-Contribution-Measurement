@@ -148,6 +148,13 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
+### Human Annotation
+Analyze human annotation and measured results.
+```bash
+bash script/annotation.sh
+```
+The distribution figure will be generated in ./figures
+
 ### Impact of Generative Model Temperature
 
 Generate responses with varying lengths.
