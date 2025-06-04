@@ -243,6 +243,13 @@ Parameters:
 - model: The model whose responses are being evaluated. The options include: `["llama3_8b", "mixtral_8x7b"]`
 - time: The index for repeated experiments. This is used to distinguish between different runs of the same experiment. The options include: `[1, 2, 3, 4, 5]`
 
+#### Calculate Threshold Based on The Results
+```bash
+bash script/cal_threshold.sh {eval_model}
+```
+Parameters:
+- eval_model: The evaluation model used to measure human contribution. The options include: `["llama3_8b", "mixtral_8x7b"]`
+
 
 ### Human Contribution Estimation Without Human Input
 ```bash
